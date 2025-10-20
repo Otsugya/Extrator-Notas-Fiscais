@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extração de Nota Fiscal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --black: #000000;
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e5e5e5;
+            --gray-300: #d4d4d4;
+            --gray-400: #a3a3a3;
+            --gray-500: #737373;
+            --gray-600: #525252;
+            --gray-700: #404040;
+            --gray-800: #262626;
+            --gray-900: #171717;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--white);
+            color: var(--black);
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            padding-top: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: var(--black);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--gray-600);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .main-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            background: var(--white);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .main-card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--gray-300);
+            border-radius: 8px;
+            padding: 4rem 2rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: var(--gray-50);
+        }
+
+        .upload-area:hover {
+            border-color: var(--gray-400);
+            background: var(--white);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--black);
+            background: var(--gray-100);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--gray-400);
+        }
+
+        .upload-text h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text p {
+            color: var(--gray-600);
+            font-size: 0.95rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            margin: 2rem 0;
+            padding: 1rem;
+            background: var(--gray-100);
+            border-radius: 6px;
+            color: var(--gray-700);
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .extract-btn {
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            padding: 0.875rem 2rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: none;
+            margin: 2rem auto;
+            font-family: inherit;
+        }
+
+        .extract-btn:hover {
+            background: var(--gray-800);
+        }
+
+        .extract-btn:disabled {
+            background: var(--gray-300);
+            color: var(--gray-500);
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            display: none;
+            color: var(--gray-600);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--gray-200);
+            border-top: 2px solid var(--black);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error, .success {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1.5rem 0;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error {
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            color: var(--gray-700);
+        }
+
+        .success {
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            color: var(--gray-700);
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .results-header h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 0.25rem;
+        }
+
+        .results-header p {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tab.active {
+            color: var(--black);
+            border-bottom-color: var(--black);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--gray-700);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .formatted-data {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .data-group {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 2rem;
+            background: var(--white);
+        }
+
+        .data-group h3 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .data-label {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .data-value {
+            color: var(--black);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .json-container {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .json-container pre {
+            color: var(--gray-800);
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            margin: 0;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: background 0.2s ease;
+            font-family: inherit;
+        }
+
+        .copy-btn:hover {
+            background: var(--gray-800);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .upload-area {
+                padding: 3rem 1.5rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: center;
+                border-bottom: none;
+                border-right: 2px solid transparent;
+                padding: 1rem;
+            }
+
+            .tab.active {
+                border-right-color: var(--black);
+                border-bottom: none;
+            }
+
+            .data-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .data-value {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Extração de Nota Fiscal</h1>
+            <p>Extração automática de dados de notas fiscais</p>
+        </div>
+
+        <div class="main-card">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">
+                    <h3>Carregar PDF</h3>
+                    <p>Selecione ou arraste o arquivo da nota fiscal</p>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf">
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <strong>Arquivo:</strong>
+                <span id="fileName"></span>
+                <span id="fileSize"></span>
+            </div>
+
+            <button class="extract-btn" id="extractBtn">
+                <span id="btnText">Extrair Dados</span>
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processando documento...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+            <div class="success" id="success"></div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>Dados Extraídos</h2>
+                <p>Informações identificadas no documento</p>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('formatted')">Formatado</button>
+                <button class="tab" onclick="showTab('json')">JSON</button>
+            </div>
+
+            <div class="tab-content active" id="formattedTab">
+                <div class="formatted-data" id="formattedData"></div>
+            </div>
+
+            <div class="tab-content" id="jsonTab">
+                <div class="json-container">
+                    <button class="copy-btn" onclick="copyJson()">Copiar</button>
+                    <pre id="jsonData"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let extractedData = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const extractBtn = document.getElementById('extractBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const success = document.getElementById('success');
+        const resultsSection = document.getElementById('resultsSection');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        fileInput.addEventListener('change', handleFileSelect);
+        extractBtn.addEventListener('click', extractData);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect({ target: { files } });
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                fileName.textContent = file.name;
+                fileSize.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                fileInfo.style.display = 'block';
+                extractBtn.style.display = 'block';
+                hideMessages();
+            } else {
+                showError('Por favor, selecione um arquivo PDF válido.');
+                fileInfo.style.display = 'none';
+                extractBtn.style.display = 'none';
+            }
+        }
+
+        async function extractData() {
+            const file = fileInput.files[0];
+            if (!file) {
+                showError('Nenhum arquivo selecionado.');
+                return;
+            }
+
+            setLoading(true);
+            hideMessages();
+            resultsSection.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('pdf', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.erro) {
+                    showError(data.erro);
+                } else {
+                    extractedData = data;
+                    showResults(data);
+                    showSuccess('Dados extraídos com sucesso.');
+                }
+            } catch (err) {
+                showError('Erro ao processar o arquivo: ' + err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function setLoading(isLoading) {
+            loading.style.display = isLoading ? 'block' : 'none';
+            extractBtn.disabled = isLoading;
+            document.getElementById('btnText').textContent = isLoading ? 'Processando...' : 'Extrair Dados';
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            success.textContent = message;
+            success.style.display = 'block';
+        }
+
+        function hideMessages() {
+            error.style.display = 'none';
+            success.style.display = 'none';
+        }
+
+        function showResults(data) {
+            updateFormattedData(data);
+            updateJsonData(data);
+            resultsSection.style.display = 'block';
+        }
+
+        function updateFormattedData(data) {
+            const formattedData = document.getElementById('formattedData');
+            formattedData.innerHTML = `
+                <div class="data-group">
+                    <h3>Informações da Nota Fiscal</h3>
+                    <div class="data-item">
+                        <span class="data-label">Número:</span>
+                        <span class="data-value">${data.numero || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Série:</span>
+                        <span class="data-value">${data.serie || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Data de Emissão:</span>
+                        <span class="data-value">${formatDate(data.dataEmissao)}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Valor Total:</span>
+                        <span class="data-value">R$ ${formatCurrency(data.valorTotal)}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Fornecedor</h3>
+                    <div class="data-item">
+                        <span class="data-label">Razão Social:</span>
+                        <span class="data-value">${data.fornecedor?.razaoSocial || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Nome Fantasia:</span>
+                        <span class="data-value">${data.fornecedor?.fantasia || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">CNPJ:</span>
+                        <span class="data-value">${data.fornecedor?.cnpj || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Cliente/Faturado</h3>
+                    <div class="data-item">
+                        <span class="data-label">Nome:</span>
+                        <span class="data-value">${data.faturado?.nomeCompleto || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">CPF:</span>
+                        <span class="data-value">${data.faturado?.cpf || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Itens</h3>
+                    ${data.itens?.map((item, index) => `
+                        <div class="data-item">
+                            <span class="data-label">Item ${index + 1}:</span>
+                            <span class="data-value">${item.descricao || 'N/A'}</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">Quantidade:</span>
+                            <span class="data-value">${item.quantidade || 'N/A'}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhum item encontrado</span></div>'}
+                </div>
+
+                <div class="data-group">
+                    <h3>Parcelas</h3>
+                    ${data.parcelas?.map((parcela, index) => `
+                        <div class="data-item">
+                            <span class="data-label">Parcela ${parcela.numero || index + 1}:</span>
+                            <span class="data-value">R$ ${formatCurrency(parcela.valor)} - Venc: ${formatDate(parcela.dataVencimento)}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhuma parcela encontrada</span></div>'}
+                </div>
+
+                <div class="data-group">
+                    <h3>Classificação de Despesa</h3>
+                    ${data.classificacaoDespesa?.map(categoria => `
+                        <div class="data-item">
+                            <span class="data-label">Categoria:</span>
+                            <span class="data-value">${categoria}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhuma classificação encontrada</span></div>'}
+                </div>
+            `;
+        }
+
+        function updateJsonData(data) {
+            document.getElementById('jsonData').textContent = JSON.stringify(data, null, 2);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleDateString('pt-BR');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function formatCurrency(value) {
+            if (!value) return '0,00';
+            return parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        function copyJson() {
+            if (extractedData) {
+                navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2)).then(() => {
+                    const btn = document.querySelector('.copy-btn');
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copiado';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                    }, 2000);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
