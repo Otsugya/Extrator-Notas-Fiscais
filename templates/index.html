@@ -31,6 +31,7 @@
             background: var(--white);
             color: var(--black);
             line-height: 1.6;
+            font-weight: 400;
         }
 
         .container {
@@ -50,6 +51,13 @@
             font-weight: 300;
             color: var(--black);
             margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--gray-600);
+            font-size: 1rem;
+            font-weight: 400;
         }
 
         .main-card {
@@ -58,6 +66,11 @@
             padding: 3rem;
             margin-bottom: 2rem;
             background: var(--white);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .main-card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
         .upload-area {
@@ -65,8 +78,32 @@
             border-radius: 8px;
             padding: 4rem 2rem;
             text-align: center;
+            transition: all 0.2s ease;
             cursor: pointer;
             background: var(--gray-50);
+        }
+
+        .upload-area:hover {
+            border-color: var(--gray-400);
+            background: var(--white);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--gray-400);
+        }
+
+        .upload-text h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text p {
+            color: var(--gray-600);
+            font-size: 0.95rem;
         }
 
         .file-input {
@@ -78,7 +115,9 @@
             padding: 1rem;
             background: var(--gray-100);
             border-radius: 6px;
+            color: var(--gray-700);
             display: none;
+            font-size: 0.9rem;
         }
 
         .extract-btn, .process-btn {
@@ -87,10 +126,12 @@
             border: none;
             padding: 0.875rem 2rem;
             font-size: 0.95rem;
+            font-weight: 500;
             border-radius: 6px;
             cursor: pointer;
+            transition: all 0.2s ease;
             display: none;
-            margin: 1rem auto;
+            margin: 2rem auto;
             font-family: inherit;
         }
 
@@ -98,10 +139,17 @@
             background: var(--gray-800);
         }
 
+        .extract-btn:disabled, .process-btn:disabled {
+            background: var(--gray-300);
+            color: var(--gray-500);
+            cursor: not-allowed;
+        }
+
         .loading {
             text-align: center;
             padding: 3rem;
             display: none;
+            color: var(--gray-600);
         }
 
         .spinner {
@@ -124,20 +172,165 @@
             border-radius: 6px;
             margin: 1.5rem 0;
             display: none;
+            font-size: 0.9rem;
         }
 
         .error {
             background: var(--gray-100);
+            border: 1px solid var(--gray-300);
             color: var(--gray-700);
         }
 
         .success {
             background: var(--gray-100);
+            border: 1px solid var(--gray-300);
             color: var(--gray-700);
         }
 
-        .results-section, .validation-section {
+        .results-section, .validation-section, .final-results-section {
             display: none;
+        }
+
+        .results-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .results-header h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 0.25rem;
+        }
+
+        .results-header p {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tab.active {
+            color: var(--black);
+            border-bottom-color: var(--black);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--gray-700);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .formatted-data {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .data-group {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 2rem;
+            background: var(--white);
+        }
+
+        .data-group h3 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .data-label {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .data-value {
+            color: var(--black);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .json-container {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .json-container pre {
+            color: var(--gray-800);
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            margin: 0;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: background 0.2s ease;
+            font-family: inherit;
+        }
+
+        .copy-btn:hover {
+            background: var(--gray-800);
         }
 
         .validation-group {
@@ -146,12 +339,6 @@
             padding: 2rem;
             margin-bottom: 1.5rem;
             background: var(--white);
-        }
-
-        .validation-group h3 {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 1rem;
         }
 
         .validation-item {
@@ -187,60 +374,34 @@
             background: var(--gray-200);
             color: var(--gray-700);
         }
-
-        .data-group {
-            border: 1px solid var(--gray-200);
-            border-radius: 8px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .data-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--gray-100);
-        }
-
-        .data-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .data-label {
-            color: var(--gray-600);
-            font-size: 0.9rem;
-        }
-
-        .data-value {
-            color: var(--black);
-            font-weight: 500;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>Extração de Nota Fiscal</h1>
-            <p>Sistema Administrativo-Financeiro - Etapa 2</p>
+            <p>Extração automática de dados de notas fiscais</p>
         </div>
 
         <div class="main-card">
             <div class="upload-area" id="uploadArea">
-                <div>📄</div>
-                <h3>Carregar PDF</h3>
-                <p>Selecione ou arraste o arquivo da nota fiscal</p>
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">
+                    <h3>Carregar PDF</h3>
+                    <p>Selecione ou arraste o arquivo da nota fiscal</p>
+                </div>
                 <input type="file" id="fileInput" class="file-input" accept=".pdf">
             </div>
 
             <div class="file-info" id="fileInfo">
                 <strong>Arquivo:</strong>
                 <span id="fileName"></span>
+                <span id="fileSize"></span>
             </div>
 
-            <button class="extract-btn" id="extractBtn">Extrair Dados</button>
+            <button class="extract-btn" id="extractBtn">
+                <span id="btnText">Extrair Dados</span>
+            </button>
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
@@ -251,18 +412,65 @@
             <div class="success" id="success"></div>
         </div>
 
+        <!-- ETAPA 1: EXIBIÇÃO DOS DADOS EXTRAÍDOS -->
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>Dados Extraídos</h2>
+                <p>Informações identificadas no documento</p>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('formatted')">Formatado</button>
+                <button class="tab" onclick="showTab('json')">JSON</button>
+                <button class="tab" onclick="showTab('dados')">Dados</button>
+            </div>
+
+            <div class="tab-content active" id="formattedTab">
+                <div class="formatted-data" id="formattedData"></div>
+            </div>
+
+            <div class="tab-content" id="jsonTab">
+                <div class="json-container">
+                    <button class="copy-btn" onclick="copyJson()">Copiar</button>
+                    <pre id="jsonData"></pre>
+                </div>
+            </div>
+
+            <div class="tab-content" id="dadosTab">
+                <div class="json-container">
+                    <button class="copy-btn" onclick="copyDados()">Copiar</button>
+                    <pre id="dadosData"></pre>
+                </div>
+            </div>
+
+            <button class="process-btn" id="processBtn" style="display: block; margin-top: 2rem;">
+                Processar e Gravar no Banco
+            </button>
+        </div>
+
+        <!-- ETAPA 2: VALIDAÇÃO -->
         <div class="validation-section" id="validationSection">
-            <h2 style="margin-bottom: 2rem;">Validação dos Dados</h2>
+            <div class="results-header">
+                <h2>Validação dos Dados</h2>
+                <p>Verificando informações no banco de dados</p>
+            </div>
             
             <div class="validation-group" id="fornecedorValidation"></div>
             <div class="validation-group" id="faturadoValidation"></div>
             <div class="validation-group" id="despesaValidation"></div>
 
-            <button class="process-btn" id="processBtn">Processar e Gravar no Banco</button>
+            <div class="loading" id="loadingValidation">
+                <div class="spinner"></div>
+                <p>Processando e gravando no banco...</p>
+            </div>
         </div>
 
-        <div class="results-section" id="resultsSection">
-            <h2 style="margin-bottom: 2rem;">Resultado do Processamento</h2>
+        <!-- RESULTADO FINAL -->
+        <div class="final-results-section" id="finalResultsSection">
+            <div class="results-header">
+                <h2>✓ Registro Lançado com Sucesso</h2>
+                <p>Dados gravados no banco de dados</p>
+            </div>
             <div id="resultadoFinal"></div>
         </div>
     </div>
@@ -274,13 +482,16 @@
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
         const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
         const extractBtn = document.getElementById('extractBtn');
         const processBtn = document.getElementById('processBtn');
         const loading = document.getElementById('loading');
+        const loadingValidation = document.getElementById('loadingValidation');
         const error = document.getElementById('error');
         const success = document.getElementById('success');
-        const validationSection = document.getElementById('validationSection');
         const resultsSection = document.getElementById('resultsSection');
+        const validationSection = document.getElementById('validationSection');
+        const finalResultsSection = document.getElementById('finalResultsSection');
 
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFileSelect);
@@ -291,6 +502,7 @@
             const file = e.target.files[0];
             if (file && file.type === 'application/pdf') {
                 fileName.textContent = file.name;
+                fileSize.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
                 fileInfo.style.display = 'block';
                 extractBtn.style.display = 'block';
                 hideMessages();
@@ -310,8 +522,9 @@
 
             setLoading(true);
             hideMessages();
-            validationSection.style.display = 'none';
             resultsSection.style.display = 'none';
+            validationSection.style.display = 'none';
+            finalResultsSection.style.display = 'none';
 
             const formData = new FormData();
             formData.append('pdf', file);
@@ -328,8 +541,8 @@
                     showError(data.erro);
                 } else {
                     extractedData = data;
-                    showValidation(data);
-                    showSuccess('Dados extraídos com sucesso. Verifique as informações abaixo.');
+                    showResults(data);
+                    showSuccess('Dados extraídos com sucesso.');
                 }
             } catch (err) {
                 showError('Erro ao processar o arquivo: ' + err.message);
@@ -338,48 +551,16 @@
             }
         }
 
-        function showValidation(data) {
-            // Fornecedor
-            document.getElementById('fornecedorValidation').innerHTML = `
-                <h3>FORNECEDOR</h3>
-                <div class="validation-item">
-                    <div class="validation-value">${data.fornecedor?.razaoSocial || 'N/A'}</div>
-                    <div class="validation-label">CNPJ: ${data.fornecedor?.cnpj || 'N/A'}</div>
-                    <div class="validation-label">Status: <span class="status-badge status-nao-existe">SERÁ VALIDADO</span></div>
-                </div>
-            `;
-
-            // Faturado
-            document.getElementById('faturadoValidation').innerHTML = `
-                <h3>FATURADO</h3>
-                <div class="validation-item">
-                    <div class="validation-value">${data.faturado?.nomeCompleto || 'N/A'}</div>
-                    <div class="validation-label">CPF: ${data.faturado?.cpf || 'N/A'}</div>
-                    <div class="validation-label">Status: <span class="status-badge status-nao-existe">SERÁ VALIDADO</span></div>
-                </div>
-            `;
-
-            // Despesas
-            let despesasHTML = '<h3>DESPESAS</h3>';
-            (data.classificacaoDespesa || []).forEach(despesa => {
-                despesasHTML += `
-                    <div class="validation-item">
-                        <div class="validation-value">${despesa}</div>
-                        <div class="validation-label">Status: <span class="status-badge status-nao-existe">SERÁ VALIDADO</span></div>
-                    </div>
-                `;
-            });
-            document.getElementById('despesaValidation').innerHTML = despesasHTML;
-
-            validationSection.style.display = 'block';
-            processBtn.style.display = 'block';
-        }
-
         async function processData() {
             if (!extractedData) return;
 
-            setLoading(true);
+            validationSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            loadingValidation.style.display = 'block';
             hideMessages();
+
+            // Mostrar validação
+            showValidation(extractedData);
 
             try {
                 const response = await fetch('/processar', {
@@ -394,15 +575,49 @@
 
                 if (result.erro) {
                     showError(result.erro);
+                    loadingValidation.style.display = 'none';
                 } else {
-                    showFinalResult(result);
-                    showSuccess(result.mensagem);
+                    setTimeout(() => {
+                        loadingValidation.style.display = 'none';
+                        showFinalResult(result);
+                        showSuccess(result.mensagem);
+                    }, 1500);
                 }
             } catch (err) {
                 showError('Erro ao processar: ' + err.message);
-            } finally {
-                setLoading(false);
+                loadingValidation.style.display = 'none';
             }
+        }
+
+        function showValidation(data) {
+            document.getElementById('fornecedorValidation').innerHTML = `
+                <h3>FORNECEDOR</h3>
+                <div class="validation-item">
+                    <div class="validation-value">${data.fornecedor?.razaoSocial || 'N/A'}</div>
+                    <div class="validation-label">CNPJ: ${data.fornecedor?.cnpj || 'N/A'}</div>
+                    <div class="validation-label">Consultando banco de dados...</div>
+                </div>
+            `;
+
+            document.getElementById('faturadoValidation').innerHTML = `
+                <h3>FATURADO</h3>
+                <div class="validation-item">
+                    <div class="validation-value">${data.faturado?.nomeCompleto || 'N/A'}</div>
+                    <div class="validation-label">CPF: ${data.faturado?.cpf || 'N/A'}</div>
+                    <div class="validation-label">Consultando banco de dados...</div>
+                </div>
+            `;
+
+            let despesasHTML = '<h3>DESPESAS</h3>';
+            (data.classificacaoDespesa || []).forEach(despesa => {
+                despesasHTML += `
+                    <div class="validation-item">
+                        <div class="validation-value">${despesa}</div>
+                        <div class="validation-label">Consultando banco de dados...</div>
+                    </div>
+                `;
+            });
+            document.getElementById('despesaValidation').innerHTML = despesasHTML;
         }
 
         function showFinalResult(result) {
@@ -476,14 +691,14 @@
             `;
 
             document.getElementById('resultadoFinal').innerHTML = html;
-            resultsSection.style.display = 'block';
+            finalResultsSection.style.display = 'block';
             validationSection.style.display = 'none';
         }
 
         function setLoading(isLoading) {
             loading.style.display = isLoading ? 'block' : 'none';
             extractBtn.disabled = isLoading;
-            processBtn.disabled = isLoading;
+            document.getElementById('btnText').textContent = isLoading ? 'Processando...' : 'Extrair Dados';
         }
 
         function showError(message) {
@@ -499,6 +714,198 @@
         function hideMessages() {
             error.style.display = 'none';
             success.style.display = 'none';
+        }
+
+        function showResults(data) {
+            updateFormattedData(data);
+            updateJsonData(data);
+            updateDadosData(data);
+            resultsSection.style.display = 'block';
+        }
+
+        function updateFormattedData(data) {
+            const formattedData = document.getElementById('formattedData');
+            formattedData.innerHTML = `
+                <div class="data-group">
+                    <h3>Informações da Nota Fiscal</h3>
+                    <div class="data-item">
+                        <span class="data-label">Número:</span>
+                        <span class="data-value">${data.numero || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Série:</span>
+                        <span class="data-value">${data.serie || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Data de Emissão:</span>
+                        <span class="data-value">${formatDate(data.dataEmissao)}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Valor Total:</span>
+                        <span class="data-value">R$ ${formatCurrency(data.valorTotal)}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Fornecedor</h3>
+                    <div class="data-item">
+                        <span class="data-label">Razão Social:</span>
+                        <span class="data-value">${data.fornecedor?.razaoSocial || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Nome Fantasia:</span>
+                        <span class="data-value">${data.fornecedor?.fantasia || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">CNPJ:</span>
+                        <span class="data-value">${data.fornecedor?.cnpj || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Cliente/Faturado</h3>
+                    <div class="data-item">
+                        <span class="data-label">Nome:</span>
+                        <span class="data-value">${data.faturado?.nomeCompleto || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">CPF:</span>
+                        <span class="data-value">${data.faturado?.cpf || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Itens</h3>
+                    ${data.itens?.map((item, index) => `
+                        <div class="data-item">
+                            <span class="data-label">Item ${index + 1}:</span>
+                            <span class="data-value">${item.descricao || 'N/A'}</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">Quantidade:</span>
+                            <span class="data-value">${item.quantidade || 'N/A'}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhum item encontrado</span></div>'}
+                </div>
+
+                <div class="data-group">
+                    <h3>Parcelas</h3>
+                    ${data.parcelas?.map((parcela, index) => `
+                        <div class="data-item">
+                            <span class="data-label">Parcela ${parcela.numero || index + 1}:</span>
+                            <span class="data-value">R$ ${formatCurrency(parcela.valor)} - Venc: ${formatDate(parcela.dataVencimento)}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhuma parcela encontrada</span></div>'}
+                </div>
+
+                <div class="data-group">
+                    <h3>Classificação de Despesa</h3>
+                    ${data.classificacaoDespesa?.map(categoria => `
+                        <div class="data-item">
+                            <span class="data-label">Categoria:</span>
+                            <span class="data-value">${categoria}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhuma classificação encontrada</span></div>'}
+                </div>
+            `;
+        }
+
+        function updateJsonData(data) {
+            document.getElementById('jsonData').textContent = JSON.stringify(data, null, 2);
+        }
+
+        function updateDadosData(data) {
+            const dadosFormatados = {
+                "FORNECEDOR": {
+                    "razaoSocial": data.fornecedor?.razaoSocial || "N/A",
+                    "cnpj": data.fornecedor?.cnpj || "N/A"
+                },
+                "FATURADO": {
+                    "nomeCompleto": data.faturado?.nomeCompleto || "N/A",
+                    "cpf": data.faturado?.cpf || "N/A"
+                },
+                "DESPESAS": data.classificacaoDespesa || [],
+                "NOTA_FISCAL": {
+                    "numero": data.numero || "N/A",
+                    "serie": data.serie || "N/A",
+                    "dataEmissao": data.dataEmissao || "N/A",
+                    "valorTotal": data.valorTotal || 0
+                },
+                "ITENS": data.itens || [],
+                "PARCELAS": data.parcelas || []
+            };
+            document.getElementById('dadosData').textContent = JSON.stringify(dadosFormatados, null, 2);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleDateString('pt-BR');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function formatCurrency(value) {
+            if (!value) return '0,00';
+            return parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        function copyJson() {
+            if (extractedData) {
+                navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2)).then(() => {
+                    const btn = document.querySelector('.copy-btn');
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copiado';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                    }, 2000);
+                });
+            }
+        }
+
+        function copyDados() {
+            if (extractedData) {
+                const dadosFormatados = {
+                    "FORNECEDOR": {
+                        "razaoSocial": extractedData.fornecedor?.razaoSocial || "N/A",
+                        "cnpj": extractedData.fornecedor?.cnpj || "N/A"
+                    },
+                    "FATURADO": {
+                        "nomeCompleto": extractedData.faturado?.nomeCompleto || "N/A",
+                        "cpf": extractedData.faturado?.cpf || "N/A"
+                    },
+                    "DESPESAS": extractedData.classificacaoDespesa || [],
+                    "NOTA_FISCAL": {
+                        "numero": extractedData.numero || "N/A",
+                        "serie": extractedData.serie || "N/A",
+                        "dataEmissao": extractedData.dataEmissao || "N/A",
+                        "valorTotal": extractedData.valorTotal || 0
+                    },
+                    "ITENS": extractedData.itens || [],
+                    "PARCELAS": extractedData.parcelas || []
+                };
+                navigator.clipboard.writeText(JSON.stringify(dadosFormatados, null, 2)).then(() => {
+                    const btns = document.querySelectorAll('.copy-btn');
+                    btns.forEach(btn => {
+                        if (btn.parentElement.parentElement.id === 'dadosTab') {
+                            const originalText = btn.textContent;
+                            btn.textContent = 'Copiado';
+                            setTimeout(() => {
+                                btn.textContent = originalText;
+                            }, 2000);
+                        }
+                    });
+                });
+            }
         }
     </script>
 </body>
