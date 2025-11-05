@@ -289,5 +289,76 @@ def processar_dados():
 def get_categorias():
     return jsonify(list(CATEGORIAS_DESPESAS.keys()))
 
+@app.route('/banco-dados')
+def get_banco_dados():
+    try:
+        conn = sqlite3.connect('sistema.db')
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        # Buscar todas as pessoas
+        c.execute('SELECT * FROM Pessoas ORDER BY idPessoas DESC')
+        pessoas = [dict(row) for row in c.fetchall()]
+        
+        # Buscar todas as classificações
+        c.execute('SELECT * FROM Classificacao ORDER BY idClassificacao DESC')
+        classificacoes = [dict(row) for row in c.fetchall()]
+        
+        # Buscar todos os movimentos com joins
+        c.execute('''
+            SELECT 
+                m.*,
+                f.razaosocial as fornecedor_nome,
+                f.documento as fornecedor_doc,
+                ft.razaosocial as faturado_nome,
+                ft.documento as faturado_doc
+            FROM MovimentoContas m
+            LEFT JOIN Pessoas f ON m.Pessoas_idFornecedorCliente = f.idPessoas
+            LEFT JOIN Pessoas ft ON m.Pessoas_idFaturado = ft.idPessoas
+            ORDER BY m.idMovimentoContas DESC
+        ''')
+        movimentos = [dict(row) for row in c.fetchall()]
+        
+        # Buscar todas as parcelas
+        c.execute('SELECT * FROM ParcelasContas ORDER BY idParcelasContas DESC')
+        parcelas = [dict(row) for row in c.fetchall()]
+        
+        conn.close()
+        
+        return jsonify({
+            "pessoas": pessoas,
+            "classificacoes": classificacoes,
+            "movimentos": movimentos,
+            "parcelas": parcelas
+        })
+    except Exception as e:
+        return jsonify({"erro": f"Erro ao buscar dados: {str(e)}"}), 500
+
+@app.route('/zerar-banco', methods=['POST'])
+def zerar_banco():
+    try:
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        
+        # Deletar todos os dados das tabelas
+        c.execute('DELETE FROM MovimentoContas_has_Classificacao')
+        c.execute('DELETE FROM ParcelasContas')
+        c.execute('DELETE FROM MovimentoContas')
+        c.execute('DELETE FROM Classificacao')
+        c.execute('DELETE FROM Pessoas')
+        
+        # Resetar os auto-increment
+        c.execute('DELETE FROM sqlite_sequence WHERE name="Pessoas"')
+        c.execute('DELETE FROM sqlite_sequence WHERE name="Classificacao"')
+        c.execute('DELETE FROM sqlite_sequence WHERE name="MovimentoContas"')
+        c.execute('DELETE FROM sqlite_sequence WHERE name="ParcelasContas"')
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "mensagem": "Banco de dados zerado com sucesso!"})
+    except Exception as e:
+        return jsonify({"erro": f"Erro ao zerar banco: {str(e)}"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
