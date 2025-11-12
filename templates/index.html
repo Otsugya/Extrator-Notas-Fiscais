@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extração de Nota Fiscal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --black: #000000;
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e5e5e5;
+            --gray-300: #d4d4d4;
+            --gray-400: #a3a3a3;
+            --gray-500: #737373;
+            --gray-600: #525252;
+            --gray-700: #404040;
+            --gray-800: #262626;
+            --gray-900: #171717;
+            --blue-500: #3b82f6;
+            --blue-600: #2563eb;
+            --green-500: #10b981;
+            --green-600: #059669;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--white);
+            color: var(--black);
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            padding-top: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: var(--black);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--gray-600);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* ==================== SEÇÃO RAG ==================== */
+        .rag-section {
+            margin-bottom: 3rem;
+        }
+
+        .rag-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 2rem;
+            background: var(--white);
+            margin-bottom: 2rem;
+        }
+
+        .rag-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .rag-header h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--black);
+        }
+
+        .rag-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .rag-tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .rag-tab.active {
+            color: var(--black);
+            border-bottom-color: var(--black);
+        }
+
+        .rag-tab:hover:not(.active) {
+            color: var(--gray-700);
+        }
+
+        .rag-input-area {
+            margin-bottom: 1.5rem;
+        }
+
+        .rag-input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.2s ease;
+        }
+
+        .rag-input:focus {
+            outline: none;
+            border-color: var(--black);
+        }
+
+        .rag-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .rag-btn {
+            flex: 1;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .rag-btn-simples {
+            background: var(--blue-500);
+            color: var(--white);
+        }
+
+        .rag-btn-simples:hover {
+            background: var(--blue-600);
+        }
+
+        .rag-btn-embeddings {
+            background: var(--green-500);
+            color: var(--white);
+        }
+
+        .rag-btn-embeddings:hover {
+            background: var(--green-600);
+        }
+
+        .rag-btn:disabled {
+            background: var(--gray-300);
+            color: var(--gray-500);
+            cursor: not-allowed;
+        }
+
+        .rebuild-embeddings-btn {
+            background: var(--gray-800);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .rebuild-embeddings-btn:hover {
+            background: var(--black);
+        }
+
+        .chat-history {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .chat-message {
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-question {
+            background: var(--gray-100);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-question-label {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .chat-question-text {
+            color: var(--black);
+            font-weight: 500;
+        }
+
+        .chat-answer {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .chat-answer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .chat-method-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-simples {
+            background: var(--blue-500);
+            color: var(--white);
+        }
+
+        .badge-embeddings {
+            background: var(--green-500);
+            color: var(--white);
+        }
+
+        .chat-answer-content {
+            color: var(--gray-800);
+            line-height: 1.7;
+        }
+
+        .chat-answer-content h1,
+        .chat-answer-content h2,
+        .chat-answer-content h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--black);
+        }
+
+        .chat-answer-content ul,
+        .chat-answer-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .chat-answer-content code {
+            background: var(--gray-100);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+            font-family: monospace;
+        }
+
+        .chat-answer-content pre {
+            background: var(--gray-100);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .similarities-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .similarities-title {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .similarity-item {
+            background: var(--gray-50);
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .similarity-score {
+            color: var(--green-600);
+            font-weight: 600;
+        }
+
+        .rag-examples {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .rag-examples-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 1rem;
+        }
+
+        .rag-example-item {
+            background: var(--white);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            color: var(--gray-700);
+        }
+
+        .rag-example-item:hover {
+            background: var(--gray-100);
+            color: var(--black);
+        }
+
+        .database-section {
+            margin-bottom: 3rem;
+        }
+
+        .database-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            background: var(--white);
+        }
+
+        .database-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .database-header h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--black);
+        }
+
+        .refresh-btn {
+            background: var(--gray-100);
+            color: var(--black);
+            border: 1px solid var(--gray-200);
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .refresh-btn:hover {
+            background: var(--gray-200);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--black);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            background: var(--gray-100);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 500;
+            color: var(--black);
+            border-bottom: 2px solid var(--gray-300);
+        }
+
+        .data-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .data-table tr:hover {
+            background: var(--gray-50);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-ativo {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .badge-fornecedor {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .badge-faturado {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .badge-despesa {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .main-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            background: var(--white);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .main-card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--gray-300);
+            border-radius: 8px;
+            padding: 4rem 2rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: var(--gray-50);
+        }
+
+        .upload-area:hover {
+            border-color: var(--gray-400);
+            background: var(--white);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--gray-400);
+        }
+
+        .upload-text h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text p {
+            color: var(--gray-600);
+            font-size: 0.95rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            margin: 2rem 0;
+            padding: 1rem;
+            background: var(--gray-100);
+            border-radius: 6px;
+            color: var(--gray-700);
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .extract-btn, .process-btn {
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            padding: 0.875rem 2rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: none;
+            margin: 2rem auto;
+            font-family: inherit;
+        }
+
+        .extract-btn:hover, .process-btn:hover {
+            background: var(--gray-800);
+        }
+
+        .extract-btn:disabled, .process-btn:disabled {
+            background: var(--gray-300);
+            color: var(--gray-500);
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            display: none;
+            color: var(--gray-600);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--gray-200);
+            border-top: 2px solid var(--black);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error, .success {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1.5rem 0;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error {
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            color: var(--gray-700);
+        }
+
+        .success {
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            color: var(--gray-700);
+        }
+
+        .results-section, .validation-section, .final-results-section {
+            display: none;
+        }
+
+        .results-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .results-header h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 0.25rem;
+        }
+
+        .results-header p {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tab.active {
+            color: var(--black);
+            border-bottom-color: var(--black);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--gray-700);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .formatted-data {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .data-group {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 2rem;
+            background: var(--white);
+        }
+
+        .data-group h3 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--black);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .data-label {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .data-value {
+            color: var(--black);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .json-container {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .json-container pre {
+            color: var(--gray-800);
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            margin: 0;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: background 0.2s ease;
+            font-family: inherit;
+        }
+
+        .copy-btn:hover {
+            background: var(--gray-800);
+        }
+
+        .validation-group {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            background: var(--white);
+        }
+
+        .validation-item {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .validation-label {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        .validation-value {
+            color: var(--black);
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+
+        .status-existe {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .status-nao-existe {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray-500);
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Extração de Nota Fiscal</h1>
+            <p>Extração automática de dados de notas fiscais com RAG</p>
+        </div>
+
+        <!-- ==================== SEÇÃO RAG - BUSCA INTELIGENTE ==================== -->
+        <div class="rag-section">
+            <div class="rag-card">
+                <div class="rag-header">
+                    <h2>Busca Inteligente com RAG</h2>
+                    <button class="rebuild-embeddings-btn" onclick="reconstruirEmbeddings()">
+                        Reconstruir Embeddings
+                    </button>
+                </div>
+
+                <div class="rag-input-area">
+                    <textarea 
+                        id="ragInput" 
+                        class="rag-input" 
+                        placeholder="Digite sua pergunta sobre os dados do banco..."
+                    ></textarea>
+                </div>
+
+                <div class="rag-buttons">
+                    <button class="rag-btn rag-btn-simples" onclick="consultarRAGSimples()">
+                        RAG Simples
+                    </button>
+                    <button class="rag-btn rag-btn-embeddings" onclick="consultarRAGEmbeddings()">
+                        RAG Embeddings
+                    </button>
+                </div>
+
+                <div class="loading" id="ragLoading">
+                    <div class="spinner"></div>
+                    <p>Processando sua pergunta...</p>
+                </div>
+
+                <div class="error" id="ragError"></div>
+
+                <div class="chat-history" id="chatHistory"></div>
+            </div>
+        </div>
+
+        <!-- SEÇÃO DE BANCO DE DADOS -->
+        <div class="database-section">
+            <div class="database-card">
+                <div class="database-header">
+                    <h2>Banco de Dados</h2>
+                    <div>
+                        <button class="refresh-btn" onclick="carregarBancoDados()">Atualizar</button>
+                        <button class="refresh-btn" onclick="zerarBanco()" style="margin-left: 0.5rem; background: var(--gray-200); color: var(--gray-700);">Zerar Banco</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPessoas">0</div>
+                        <div class="stat-label">Pessoas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalClassificacoes">0</div>
+                        <div class="stat-label">Classificações</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalMovimentos">0</div>
+                        <div class="stat-label">Movimentos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalParcelas">0</div>
+                        <div class="stat-label">Parcelas</div>
+                    </div>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab active" onclick="showDbTab('pessoas')">Pessoas</button>
+                    <button class="tab" onclick="showDbTab('classificacoes')">Classificações</button>
+                    <button class="tab" onclick="showDbTab('movimentos')">Movimentos</button>
+                    <button class="tab" onclick="showDbTab('parcelas')">Parcelas</button>
+                </div>
+
+                <div class="tab-content active" id="pessoasTab">
+                    <div class="table-container">
+                        <table class="data-table" id="pessoasTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Razão Social</th>
+                                    <th>Documento</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pessoasBody">
+                                <tr><td colspan="5" class="empty-state"><p>Carregando dados...</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="classificacoesTab">
+                    <div class="table-container">
+                        <table class="data-table" id="classificacoesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Descrição</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="classificacoesBody">
+                                <tr><td colspan="4" class="empty-state"><p>Carregando dados...</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="movimentosTab">
+                    <div class="table-container">
+                        <table class="data-table" id="movimentosTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>NF</th>
+                                    <th>Data</th>
+                                    <th>Fornecedor</th>
+                                    <th>Faturado</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movimentosBody">
+                                <tr><td colspan="6" class="empty-state"><p>Carregando dados...</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="parcelasTab">
+                    <div class="table-container">
+                        <table class="data-table" id="parcelasTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Identificação</th>
+                                    <th>Vencimento</th>
+                                    <th>Valor Parcela</th>
+                                    <th>Valor Pago</th>
+                                    <th>Saldo</th>
+                                    <th>Status</th>
+                                    <th>ID Movimento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="parcelasBody">
+                                <tr><td colspan="8" class="empty-state"><p>Carregando dados...</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-card">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">+</div>
+                <div class="upload-text">
+                    <h3>Carregar PDF</h3>
+                    <p>Selecione ou arraste o arquivo da nota fiscal</p>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf">
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <strong>Arquivo:</strong>
+                <span id="fileName"></span>
+                <span id="fileSize"></span>
+            </div>
+
+            <button class="extract-btn" id="extractBtn">
+                <span id="btnText">Extrair Dados</span>
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processando documento...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+            <div class="success" id="success"></div>
+        </div>
+
+        <!-- ETAPA 1: EXIBIÇÃO DOS DADOS EXTRAÍDOS -->
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>Dados Extraídos</h2>
+                <p>Informações identificadas no documento</p>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('formatted')">Formatado</button>
+                <button class="tab" onclick="showTab('json')">JSON</button>
+                <button class="tab" onclick="showTab('dados')">Dados</button>
+            </div>
+
+            <div class="tab-content active" id="formattedTab">
+                <div class="formatted-data" id="formattedData"></div>
+            </div>
+
+            <div class="tab-content" id="jsonTab">
+                <div class="json-container">
+                    <button class="copy-btn" onclick="copyJson()">Copiar</button>
+                    <pre id="jsonData"></pre>
+                </div>
+            </div>
+
+            <div class="tab-content" id="dadosTab">
+                <div class="json-container">
+                    <button class="copy-btn" onclick="copyDados()">Copiar</button>
+                    <pre id="dadosData"></pre>
+                </div>
+            </div>
+
+            <button class="process-btn" id="processBtn" style="display: block; margin-top: 2rem;">
+                Processar e Gravar no Banco
+            </button>
+        </div>
+
+        <!-- ETAPA 2: VALIDAÇÃO -->
+        <div class="validation-section" id="validationSection">
+            <div class="results-header">
+                <h2>Validação dos Dados</h2>
+                <p>Verificando informações no banco de dados</p>
+            </div>
+            
+            <div class="validation-group" id="fornecedorValidation"></div>
+            <div class="validation-group" id="faturadoValidation"></div>
+            <div class="validation-group" id="despesaValidation"></div>
+
+            <div class="loading" id="loadingValidation">
+                <div class="spinner"></div>
+                <p>Processando e gravando no banco...</p>
+            </div>
+        </div>
+
+        <!-- RESULTADO FINAL -->
+        <div class="final-results-section" id="finalResultsSection">
+            <div class="results-header">
+                <h2>Registro Lançado com Sucesso</h2>
+                <p>Dados gravados no banco de dados</p>
+            </div>
+            <div id="resultadoFinal"></div>
+        </div>
+    </div>
+
+    <script>
+        let extractedData = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const extractBtn = document.getElementById('extractBtn');
+        const processBtn = document.getElementById('processBtn');
+        const loading = document.getElementById('loading');
+        const loadingValidation = document.getElementById('loadingValidation');
+        const error = document.getElementById('error');
+        const success = document.getElementById('success');
+        const resultsSection = document.getElementById('resultsSection');
+        const validationSection = document.getElementById('validationSection');
+        const finalResultsSection = document.getElementById('finalResultsSection');
+
+        // Carregar banco de dados ao iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarBancoDados();
+        });
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        extractBtn.addEventListener('click', extractData);
+        processBtn.addEventListener('click', processData);
+
+        // ==================== FUNÇÕES RAG ====================
+
+        async function reconstruirEmbeddings() {
+            if (!confirm('Isso irá reconstruir todos os embeddings do banco de dados. Continuar?')) {
+                return;
+            }
+
+            try {
+                showRagLoading(true);
+                const response = await fetch('/reconstruir-embeddings', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.erro) {
+                    showRagError(result.erro);
+                } else {
+                    addChatMessage('Sistema', result.mensagem, 'Sistema');
+                }
+            } catch (err) {
+                showRagError('Erro ao reconstruir embeddings: ' + err.message);
+            } finally {
+                showRagLoading(false);
+            }
+        }
+
+        async function consultarRAGSimples() {
+            const pergunta = document.getElementById('ragInput').value.trim();
+            
+            if (!pergunta) {
+                showRagError('Por favor, digite uma pergunta.');
+                return;
+            }
+
+            try {
+                showRagLoading(true);
+                hideRagError();
+
+                const response = await fetch('/rag-simples', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ pergunta })
+                });
+
+                const result = await response.json();
+
+                if (result.erro) {
+                    showRagError(result.erro);
+                } else {
+                    addChatMessage(pergunta, result.resposta, result.metodo, result.similaridades);
+                    document.getElementById('ragInput').value = '';
+                }
+            } catch (err) {
+                showRagError('Erro ao processar pergunta: ' + err.message);
+            } finally {
+                showRagLoading(false);
+            }
+        }
+
+        async function consultarRAGEmbeddings() {
+            const pergunta = document.getElementById('ragInput').value.trim();
+            
+            if (!pergunta) {
+                showRagError('Por favor, digite uma pergunta.');
+                return;
+            }
+
+            try {
+                showRagLoading(true);
+                hideRagError();
+
+                const response = await fetch('/rag-embeddings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ pergunta })
+                });
+
+                const result = await response.json();
+
+                if (result.erro) {
+                    showRagError(result.erro);
+                } else {
+                    addChatMessage(pergunta, result.resposta, result.metodo, result.similaridades);
+                    document.getElementById('ragInput').value = '';
+                }
+            } catch (err) {
+                showRagError('Erro ao processar pergunta: ' + err.message);
+            } finally {
+                showRagLoading(false);
+            }
+        }
+
+        function addChatMessage(pergunta, resposta, metodo, similaridades) {
+            const chatHistory = document.getElementById('chatHistory');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+
+            let similaridadesHTML = '';
+            if (similaridades && similaridades.length > 0) {
+                similaridadesHTML = `
+                    <div class="similarities-section">
+                        <div class="similarities-title">Similaridades Encontradas:</div>
+                        ${similaridades.map(sim => `
+                            <div class="similarity-item">
+                                <span class="similarity-score">${(sim.similaridade * 100).toFixed(1)}%</span> - 
+                                <strong>${sim.tipo}</strong>: ${sim.texto.substring(0, 100)}...
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            messageDiv.innerHTML = `
+                <div class="chat-question">
+                    <div class="chat-question-label">Sua pergunta:</div>
+                    <div class="chat-question-text">${pergunta}</div>
+                </div>
+                <div class="chat-answer">
+                    <div class="chat-answer-header">
+                        <span class="chat-method-badge ${metodo.includes('Simples') ? 'badge-simples' : 'badge-embeddings'}">
+                            ${metodo}
+                        </span>
+                    </div>
+                    <div class="chat-answer-content">${formatMarkdown(resposta)}</div>
+                    ${similaridadesHTML}
+                </div>
+            `;
+
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function formatMarkdown(text) {
+            // Converter markdown básico para HTML
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/#{3} (.*?)(\n|$)/g, '<h3>$1</h3>')
+                .replace(/#{2} (.*?)(\n|$)/g, '<h2>$1</h2>')
+                .replace(/#{1} (.*?)(\n|$)/g, '<h1>$1</h1>')
+                .replace(/\n- (.*?)(\n|$)/g, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function showRagLoading(show) {
+            document.getElementById('ragLoading').style.display = show ? 'block' : 'none';
+        }
+
+        function showRagError(message) {
+            const errorElement = document.getElementById('ragError');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+
+        function hideRagError() {
+            document.getElementById('ragError').style.display = 'none';
+        }
+
+        // ==================== FUNÇÕES BANCO DE DADOS ====================
+
+        async function zerarBanco() {
+            if (!confirm('ATENÇÃO: Isso irá apagar TODOS os dados do banco de dados!\n\nDeseja realmente continuar?')) {
+                return;
+            }
+
+            if (!confirm('Tem CERTEZA ABSOLUTA? Esta ação não pode ser desfeita!')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/zerar-banco', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.erro) {
+                    showError(result.erro);
+                } else {
+                    showSuccess(result.mensagem);
+                    carregarBancoDados();
+                    document.getElementById('chatHistory').innerHTML = '';
+                }
+            } catch (err) {
+                showError('Erro ao zerar banco: ' + err.message);
+            }
+        }
+
+        async function carregarBancoDados() {
+            try {
+                const response = await fetch('/banco-dados');
+                const data = await response.json();
+
+                if (data.erro) {
+                    console.error('Erro ao carregar banco:', data.erro);
+                    return;
+                }
+
+                document.getElementById('totalPessoas').textContent = data.pessoas.length;
+                document.getElementById('totalClassificacoes').textContent = data.classificacoes.length;
+                document.getElementById('totalMovimentos').textContent = data.movimentos.length;
+                document.getElementById('totalParcelas').textContent = data.parcelas.length;
+
+                atualizarTabelaPessoas(data.pessoas);
+                atualizarTabelaClassificacoes(data.classificacoes);
+                atualizarTabelaMovimentos(data.movimentos);
+                atualizarTabelaParcelas(data.parcelas);
+            } catch (err) {
+                console.error('Erro ao carregar banco de dados:', err);
+            }
+        }
+
+        function atualizarTabelaPessoas(pessoas) {
+            const tbody = document.getElementById('pessoasBody');
+            if (pessoas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>Nenhuma pessoa cadastrada</p></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = pessoas.map(p => `
+                <tr>
+                    <td>${p.idPessoas}</td>
+                    <td><span class="badge badge-${p.tipo.toLowerCase()}">${p.tipo}</span></td>
+                    <td>${p.razaosocial || 'N/A'}</td>
+                    <td>${p.documento || 'N/A'}</td>
+                    <td><span class="badge badge-ativo">${p.status || 'ATIVO'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function atualizarTabelaClassificacoes(classificacoes) {
+            const tbody = document.getElementById('classificacoesBody');
+            if (classificacoes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p>Nenhuma classificação cadastrada</p></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = classificacoes.map(c => `
+                <tr>
+                    <td>${c.idClassificacao}</td>
+                    <td><span class="badge badge-despesa">${c.tipo}</span></td>
+                    <td>${c.descricao}</td>
+                    <td><span class="badge badge-ativo">${c.status || 'ATIVO'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function atualizarTabelaMovimentos(movimentos) {
+            const tbody = document.getElementById('movimentosBody');
+            if (movimentos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><p>Nenhum movimento cadastrado</p></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = movimentos.map(m => `
+                <tr>
+                    <td>${m.idMovimentoContas}</td>
+                    <td>${m.numeronotafiscal || 'N/A'}</td>
+                    <td>${formatDate(m.dataemissao)}</td>
+                    <td>${m.fornecedor_nome || 'N/A'}</td>
+                    <td>${m.faturado_nome || 'N/A'}</td>
+                    <td>R$ ${formatCurrency(m.valortotal)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function atualizarTabelaParcelas(parcelas) {
+            const tbody = document.getElementById('parcelasBody');
+            if (parcelas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><p>Nenhuma parcela cadastrada</p></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = parcelas.map(p => `
+                <tr>
+                    <td>${p.idParcelasContas}</td>
+                    <td>${p.Identificacao || 'N/A'}</td>
+                    <td>${formatDate(p.datavencimento)}</td>
+                    <td>R$ ${formatCurrency(p.valorparcela)}</td>
+                    <td>R$ ${formatCurrency(p.valorpago || 0)}</td>
+                    <td>R$ ${formatCurrency(p.valorsaldo)}</td>
+                    <td><span class="badge badge-ativo">${p.statusparcela}</span></td>
+                    <td>${p.MovimentoContas_idMovimentoContas}</td>
+                </tr>
+            `).join('');
+        }
+
+        function showDbTab(tabName) {
+            document.querySelectorAll('.database-card .tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.database-card .tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // ==================== FUNÇÕES UPLOAD PDF ====================
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                fileName.textContent = file.name;
+                fileSize.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                fileInfo.style.display = 'block';
+                extractBtn.style.display = 'block';
+                hideMessages();
+            } else {
+                showError('Por favor, selecione um arquivo PDF válido.');
+                fileInfo.style.display = 'none';
+                extractBtn.style.display = 'none';
+            }
+        }
+
+        async function extractData() {
+            const file = fileInput.files[0];
+            if (!file) {
+                showError('Nenhum arquivo selecionado.');
+                return;
+            }
+
+            setLoading(true);
+            hideMessages();
+            resultsSection.style.display = 'none';
+            validationSection.style.display = 'none';
+            finalResultsSection.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('pdf', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.erro) {
+                    showError(data.erro);
+                } else {
+                    extractedData = data;
+                    showResults(data);
+                    showSuccess('Dados extraídos com sucesso.');
+                }
+            } catch (err) {
+                showError('Erro ao processar o arquivo: ' + err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function processData() {
+            if (!extractedData) return;
+
+            validationSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            loadingValidation.style.display = 'block';
+            hideMessages();
+
+            showValidation(extractedData);
+
+            try {
+                const response = await fetch('/processar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(extractedData)
+                });
+
+                const result = await response.json();
+
+                if (result.erro) {
+                    showError(result.erro);
+                    loadingValidation.style.display = 'none';
+                } else {
+                    setTimeout(() => {
+                        loadingValidation.style.display = 'none';
+                        showFinalResult(result);
+                        showSuccess(result.mensagem);
+                        carregarBancoDados();
+                    }, 1500);
+                }
+            } catch (err) {
+                showError('Erro ao processar: ' + err.message);
+                loadingValidation.style.display = 'none';
+            }
+        }
+
+        function showValidation(data) {
+            document.getElementById('fornecedorValidation').innerHTML = `
+                <h3>FORNECEDOR</h3>
+                <div class="validation-item">
+                    <div class="validation-value">${data.fornecedor?.razaoSocial || 'N/A'}</div>
+                    <div class="validation-label">CNPJ: ${data.fornecedor?.cnpj || 'N/A'}</div>
+                    <div class="validation-label">Consultando banco de dados...</div>
+                </div>
+            `;
+
+            document.getElementById('faturadoValidation').innerHTML = `
+                <h3>FATURADO</h3>
+                <div class="validation-item">
+                    <div class="validation-value">${data.faturado?.nomeCompleto || 'N/A'}</div>
+                    <div class="validation-label">CPF: ${data.faturado?.cpf || 'N/A'}</div>
+                    <div class="validation-label">Consultando banco de dados...</div>
+                </div>
+            `;
+
+            let despesasHTML = '<h3>DESPESAS</h3>';
+            (data.classificacaoDespesa || []).forEach(despesa => {
+                despesasHTML += `
+                    <div class="validation-item">
+                        <div class="validation-value">${despesa}</div>
+                        <div class="validation-label">Consultando banco de dados...</div>
+                    </div>
+                `;
+            });
+            document.getElementById('despesaValidation').innerHTML = despesasHTML;
+        }
+
+        function showFinalResult(result) {
+            let html = `
+                <div class="data-group">
+                    <h3>FORNECEDOR</h3>
+                    <div class="data-item">
+                        <span class="data-label">Razão Social:</span>
+                        <span class="data-value">${result.fornecedor.razaoSocial}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Documento:</span>
+                        <span class="data-value">${result.fornecedor.documento}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Status:</span>
+                        <span class="data-value">
+                            ${result.fornecedor.existe ? 
+                                `<span class="status-badge status-existe">EXISTE - ID: ${result.fornecedor.id}</span>` : 
+                                `<span class="status-badge status-nao-existe">NÃO EXISTE - CRIADO ID: ${result.fornecedor.id}</span>`}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>FATURADO</h3>
+                    <div class="data-item">
+                        <span class="data-label">Nome:</span>
+                        <span class="data-value">${result.faturado.razaoSocial}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Documento:</span>
+                        <span class="data-value">${result.faturado.documento}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Status:</span>
+                        <span class="data-value">
+                            ${result.faturado.existe ? 
+                                `<span class="status-badge status-existe">EXISTE - ID: ${result.faturado.id}</span>` : 
+                                `<span class="status-badge status-nao-existe">NÃO EXISTE - CRIADO ID: ${result.faturado.id}</span>`}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>DESPESAS</h3>
+            `;
+
+            result.despesas.forEach(despesa => {
+                html += `
+                    <div class="data-item">
+                        <span class="data-label">${despesa.descricao}</span>
+                        <span class="data-value">
+                            ${despesa.existe ? 
+                                `<span class="status-badge status-existe">EXISTE - ID: ${despesa.id}</span>` : 
+                                `<span class="status-badge status-nao-existe">NÃO EXISTE - CRIADO ID: ${despesa.id}</span>`}
+                        </span>
+                    </div>
+                `;
+            });
+
+            html += `
+                </div>
+                <div class="data-group">
+                    <h3>MOVIMENTO CRIADO</h3>
+                    <div class="data-item">
+                        <span class="data-label">ID do Movimento:</span>
+                        <span class="data-value">${result.movimentoId}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('resultadoFinal').innerHTML = html;
+            finalResultsSection.style.display = 'block';
+            validationSection.style.display = 'none';
+        }
+
+        function setLoading(isLoading) {
+            loading.style.display = isLoading ? 'block' : 'none';
+            extractBtn.disabled = isLoading;
+            document.getElementById('btnText').textContent = isLoading ? 'Processando...' : 'Extrair Dados';
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            success.textContent = message;
+            success.style.display = 'block';
+        }
+
+        function hideMessages() {
+            error.style.display = 'none';
+            success.style.display = 'none';
+        }
+
+        function showResults(data) {
+            updateFormattedData(data);
+            updateJsonData(data);
+            updateDadosData(data);
+            resultsSection.style.display = 'block';
+        }
+
+        function updateFormattedData(data) {
+            const formattedData = document.getElementById('formattedData');
+            formattedData.innerHTML = `
+                <div class="data-group">
+                    <h3>Informações da Nota Fiscal</h3>
+                    <div class="data-item">
+                        <span class="data-label">Número:</span>
+                        <span class="data-value">${data.numero || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Série:</span>
+                        <span class="data-value">${data.serie || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Data de Emissão:</span>
+                        <span class="data-value">${formatDate(data.dataEmissao)}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Valor Total:</span>
+                        <span class="data-value">R$ ${formatCurrency(data.valorTotal)}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Fornecedor</h3>
+                    <div class="data-item">
+                        <span class="data-label">Razão Social:</span>
+                        <span class="data-value">${data.fornecedor?.razaoSocial || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Nome Fantasia:</span>
+                        <span class="data-value">${data.fornecedor?.fantasia || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">CNPJ:</span>
+                        <span class="data-value">${data.fornecedor?.cnpj || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Cliente/Faturado</h3>
+                    <div class="data-item">
+                        <span class="data-label">Nome:</span>
+                        <span class="data-value">${data.faturado?.nomeCompleto || 'N/A'}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">CPF:</span>
+                        <span class="data-value">${data.faturado?.cpf || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h3>Itens</h3>
+                    ${data.itens?.map((item, index) => `
+                        <div class="data-item">
+                            <span class="data-label">Item ${index + 1}:</span>
+                            <span class="data-value">${item.descricao || 'N/A'}</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">Quantidade:</span>
+                            <span class="data-value">${item.quantidade || 'N/A'}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhum item encontrado</span></div>'}
+                </div>
+
+                <div class="data-group">
+                    <h3>Parcelas</h3>
+                    ${data.parcelas?.map((parcela, index) => `
+                        <div class="data-item">
+                            <span class="data-label">Parcela ${parcela.numero || index + 1}:</span>
+                            <span class="data-value">R$ ${formatCurrency(parcela.valor)} - Venc: ${formatDate(parcela.dataVencimento)}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhuma parcela encontrada</span></div>'}
+                </div>
+
+                <div class="data-group">
+                    <h3>Classificação de Despesa</h3>
+                    ${data.classificacaoDespesa?.map(categoria => `
+                        <div class="data-item">
+                            <span class="data-label">Categoria:</span>
+                            <span class="data-value">${categoria}</span>
+                        </div>
+                    `).join('') || '<div class="data-item"><span class="data-value">Nenhuma classificação encontrada</span></div>'}
+                </div>
+            `;
+        }
+
+        function updateJsonData(data) {
+            document.getElementById('jsonData').textContent = JSON.stringify(data, null, 2);
+        }
+
+        function updateDadosData(data) {
+            const dadosFormatados = {
+                "FORNECEDOR": {
+                    "razaoSocial": data.fornecedor?.razaoSocial || "N/A",
+                    "cnpj": data.fornecedor?.cnpj || "N/A"
+                },
+                "FATURADO": {
+                    "nomeCompleto": data.faturado?.nomeCompleto || "N/A",
+                    "cpf": data.faturado?.cpf || "N/A"
+                },
+                "DESPESAS": data.classificacaoDespesa || [],
+                "NOTA_FISCAL": {
+                    "numero": data.numero || "N/A",
+                    "serie": data.serie || "N/A",
+                    "dataEmissao": data.dataEmissao || "N/A",
+                    "valorTotal": data.valorTotal || 0
+                },
+                "ITENS": data.itens || [],
+                "PARCELAS": data.parcelas || []
+            };
+            document.getElementById('dadosData').textContent = JSON.stringify(dadosFormatados, null, 2);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleDateString('pt-BR');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function formatCurrency(value) {
+            if (!value) return '0,00';
+            return parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.results-section .tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.results-section .tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        function copyJson() {
+            if (extractedData) {
+                navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2)).then(() => {
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copiado';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                    }, 2000);
+                });
+            }
+        }
+
+        function copyDados() {
+            if (extractedData) {
+                const dadosFormatados = {
+                    "FORNECEDOR": {
+                        "razaoSocial": extractedData.fornecedor?.razaoSocial || "N/A",
+                        "cnpj": extractedData.fornecedor?.cnpj || "N/A"
+                    },
+                    "FATURADO": {
+                        "nomeCompleto": extractedData.faturado?.nomeCompleto || "N/A",
+                        "cpf": extractedData.faturado?.cpf || "N/A"
+                    },
+                    "DESPESAS": extractedData.classificacaoDespesa || [],
+                    "NOTA_FISCAL": {
+                        "numero": extractedData.numero || "N/A",
+                        "serie": extractedData.serie || "N/A",
+                        "dataEmissao": extractedData.dataEmissao || "N/A",
+                        "valorTotal": extractedData.valorTotal || 0
+                    },
+                    "ITENS": extractedData.itens || [],
+                    "PARCELAS": extractedData.parcelas || []
+                };
+                navigator.clipboard.writeText(JSON.stringify(dadosFormatados, null, 2)).then(() => {
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copiado';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                    }, 2000);
+                });
+            }
+        }
+
+        // Permitir Enter para enviar pergunta (Shift+Enter para nova linha)
+        document.getElementById('ragInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                consultarRAGSimples();
+            }
+        });
+    </script>
+</body>
+</html>
