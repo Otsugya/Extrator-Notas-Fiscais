@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão Financeira</title>
+    <style>
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --black: #000; --white: #fff; --gray-50: #fafafa; --gray-100: #f5f5f5;
+            --gray-200: #e5e5e5; --gray-300: #d4d4d4; --gray-400: #a3a3a3;
+            --gray-500: #737373; --gray-600: #525252; --gray-700: #404040;
+            --gray-800: #262626; --gray-900: #171717; --blue-500: #3b82f6;
+            --green-500: #10b981; --red-500: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--white); color: var(--black); line-height: 1.6;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        
+        .header {
+            text-align: center; margin-bottom: 3rem; padding: 2rem 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .header h1 {
+            font-size: 2rem; font-weight: 300; letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p { color: var(--gray-600); font-size: 0.95rem; }
+
+        /* API Key Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active { display: flex; }
+        
+        .modal-content {
+            background: var(--white); padding: 2rem; border-radius: 12px;
+            max-width: 500px; width: 90%;
+        }
+        
+        .modal-content h2 { margin-bottom: 1rem; font-size: 1.5rem; font-weight: 500; }
+        
+        .modal-content input {
+            width: 100%; padding: 0.875rem; border: 1px solid var(--gray-300);
+            border-radius: 6px; margin-bottom: 1rem; font-family: inherit;
+        }
+        
+        .modal-content button {
+            width: 100%; padding: 0.875rem; background: var(--black);
+            color: var(--white); border: none; border-radius: 6px;
+            cursor: pointer; font-weight: 500; font-family: inherit;
+        }
+        
+        .modal-content button:hover { background: var(--gray-800); }
+
+        /* Navigation */
+        .nav {
+            display: flex; gap: 0.5rem; margin-bottom: 2rem;
+            border-bottom: 1px solid var(--gray-200); overflow-x: auto;
+        }
+        
+        .nav-btn {
+            padding: 0.75rem 1.5rem; background: none; border: none;
+            color: var(--gray-500); cursor: pointer; font-size: 0.9rem;
+            font-weight: 500; border-bottom: 2px solid transparent;
+            transition: all 0.2s; white-space: nowrap; font-family: inherit;
+        }
+        
+        .nav-btn.active { color: var(--black); border-bottom-color: var(--black); }
+        .nav-btn:hover:not(.active) { color: var(--gray-700); }
+
+        /* Sections */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Card */
+        .card {
+            background: var(--white); border: 1px solid var(--gray-200);
+            border-radius: 12px; padding: 2rem; margin-bottom: 2rem;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+        }
+        
+        .toolbar-left { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        
+        .btn {
+            padding: 0.75rem 1.5rem; border: none; border-radius: 6px;
+            font-size: 0.9rem; font-weight: 500; cursor: pointer;
+            transition: all 0.2s; font-family: inherit;
+        }
+        
+        .btn-primary { background: var(--black); color: var(--white); }
+        .btn-primary:hover { background: var(--gray-800); }
+        .btn-secondary { background: var(--gray-200); color: var(--black); }
+        .btn-secondary:hover { background: var(--gray-300); }
+        .btn-danger { background: var(--red-500); color: var(--white); }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; }
+
+        /* Search */
+        .search-box {
+            display: flex; gap: 0.5rem; flex: 1; max-width: 500px;
+        }
+        
+        .search-box input {
+            flex: 1; padding: 0.75rem; border: 1px solid var(--gray-300);
+            border-radius: 6px; font-family: inherit;
+        }
+        
+        .search-box input:focus { outline: none; border-color: var(--black); }
+
+        /* Table */
+        .table-container { overflow-x: auto; }
+        
+        table {
+            width: 100%; border-collapse: collapse; font-size: 0.85rem;
+            background: var(--white);
+        }
+        
+        th {
+            background: var(--gray-100); padding: 0.75rem; text-align: left;
+            font-weight: 500; border-bottom: 2px solid var(--gray-300);
+            cursor: pointer; user-select: none;
+        }
+        
+        th:hover { background: var(--gray-200); }
+        
+        td { padding: 0.75rem; border-bottom: 1px solid var(--gray-200); }
+        tr:hover { background: var(--gray-50); }
+        
+        .badge {
+            display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px;
+            font-size: 0.75rem; font-weight: 500;
+        }
+        
+        .badge-ativo { background: var(--gray-200); color: var(--gray-700); }
+        .badge-inativo { background: var(--red-500); color: var(--white); }
+        
+        .action-btns { display: flex; gap: 0.5rem; }
+
+        /* Form */
+        .form-group { margin-bottom: 1.5rem; }
+        
+        .form-group label {
+            display: block; margin-bottom: 0.5rem; font-weight: 500;
+            font-size: 0.9rem; color: var(--gray-700);
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%; padding: 0.875rem; border: 1px solid var(--gray-300);
+            border-radius: 6px; font-family: inherit; font-size: 0.95rem;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: var(--black);
+        }
+        
+        .form-actions {
+            display: flex; gap: 1rem; justify-content: flex-end;
+            margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--gray-200);
+        }
+
+        .empty-state {
+            text-align: center; padding: 3rem; color: var(--gray-500);
+        }
+
+        .loading {
+            text-align: center; padding: 2rem; color: var(--gray-600);
+        }
+
+        .spinner {
+            width: 24px; height: 24px; border: 2px solid var(--gray-200);
+            border-top: 2px solid var(--black); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 1rem; border-radius: 6px; margin-bottom: 1rem;
+            display: none; font-size: 0.9rem;
+        }
+        
+        .message.success {
+            background: var(--gray-100); border: 1px solid var(--gray-300);
+            color: var(--gray-700);
+        }
+        
+        .message.error {
+            background: var(--gray-100); border: 1px solid var(--gray-300);
+            color: var(--gray-700);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .search-box { max-width: 100%; }
+            .action-btns { flex-direction: column; }
+        }
+    </style>
+
+    <style>
+        .back-link {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 100;
+        }
+        
+        .back-link a {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: var(--gray-100);
+            color: var(--black);
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            border: 1px solid var(--gray-200);
+            transition: all 0.2s ease;
+        }
+        
+        .back-link a:hover {
+            background: var(--gray-200);
+        }
+    </style>
+
+</head>
+<body>
+    <!-- API Key Modal -->
+    <div class="modal active" id="apiKeyModal">
+        <div class="modal-content">
+            <h2>Configurar API Key</h2>
+            <p style="color: var(--gray-600); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                Insira sua chave da API Gemini para utilizar o sistema
+            </p>
+            <input type="password" id="apiKeyInput" placeholder="AIzaSy..." />
+            <button onclick="saveApiKey()">Salvar e Continuar</button>
+        </div>
+    </div>
+
+    <div class="back-link">
+    <a href="/">← Voltar para Extração</a>
+        </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Sistema de Gestão Financeira</h1>
+            <p>Gerenciamento de Contas, Pessoas e Classificações</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav">
+            <button class="nav-btn active" onclick="showSection('contas')">Contas</button>
+            <button class="nav-btn" onclick="showSection('fornecedores')">Fornecedores</button>
+            <button class="nav-btn" onclick="showSection('clientes')">Clientes</button>
+            <button class="nav-btn" onclick="showSection('faturados')">Faturados</button>
+            <button class="nav-btn" onclick="showSection('receitas')">Receitas</button>
+            <button class="nav-btn" onclick="showSection('despesas')">Despesas</button>
+        </div>
+
+        <!-- Messages -->
+        <div class="message success" id="successMessage"></div>
+        <div class="message error" id="errorMessage"></div>
+
+        <!-- CONTAS -->
+        <div class="section active" id="contas-section">
+            <div class="card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn btn-primary" onclick="showForm('contas', 'create')">+ Nova Conta</button>
+                        <button class="btn btn-secondary" onclick="loadData('contas')">Carregar Todas</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="search-contas" placeholder="Buscar..." />
+                        <button class="btn btn-secondary" onclick="searchData('contas')">Buscar</button>
+                    </div>
+                </div>
+                <div class="loading" id="loading-contas" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Carregando...</p>
+                </div>
+                <div class="table-container">
+                    <table id="table-contas">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('contas', 0)">ID</th>
+                                <th onclick="sortTable('contas', 1)">Tipo</th>
+                                <th onclick="sortTable('contas', 2)">NF</th>
+                                <th onclick="sortTable('contas', 3)">Data</th>
+                                <th onclick="sortTable('contas', 4)">Descrição</th>
+                                <th onclick="sortTable('contas', 5)">Valor</th>
+                                <th onclick="sortTable('contas', 6)">Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-contas">
+                            <tr><td colspan="8" class="empty-state">Use "Carregar Todas" ou "Buscar" para visualizar registros</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORNECEDORES -->
+        <div class="section" id="fornecedores-section">
+            <div class="card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn btn-primary" onclick="showForm('fornecedores', 'create')">+ Novo Fornecedor</button>
+                        <button class="btn btn-secondary" onclick="loadData('fornecedores')">Carregar Todos</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="search-fornecedores" placeholder="Buscar..." />
+                        <button class="btn btn-secondary" onclick="searchData('fornecedores')">Buscar</button>
+                    </div>
+                </div>
+                <div class="loading" id="loading-fornecedores" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Carregando...</p>
+                </div>
+                <div class="table-container">
+                    <table id="table-fornecedores">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('fornecedores', 0)">ID</th>
+                                <th onclick="sortTable('fornecedores', 1)">Razão Social</th>
+                                <th onclick="sortTable('fornecedores', 2)">Fantasia</th>
+                                <th onclick="sortTable('fornecedores', 3)">Documento</th>
+                                <th onclick="sortTable('fornecedores', 4)">Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-fornecedores">
+                            <tr><td colspan="6" class="empty-state">Use "Carregar Todos" ou "Buscar" para visualizar registros</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLIENTES -->
+        <div class="section" id="clientes-section">
+            <div class="card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn btn-primary" onclick="showForm('clientes', 'create')">+ Novo Cliente</button>
+                        <button class="btn btn-secondary" onclick="loadData('clientes')">Carregar Todos</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="search-clientes" placeholder="Buscar..." />
+                        <button class="btn btn-secondary" onclick="searchData('clientes')">Buscar</button>
+                    </div>
+                </div>
+                <div class="loading" id="loading-clientes" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Carregando...</p>
+                </div>
+                <div class="table-container">
+                    <table id="table-clientes">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('clientes', 0)">ID</th>
+                                <th onclick="sortTable('clientes', 1)">Razão Social</th>
+                                <th onclick="sortTable('clientes', 2)">Fantasia</th>
+                                <th onclick="sortTable('clientes', 3)">Documento</th>
+                                <th onclick="sortTable('clientes', 4)">Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-clientes">
+                            <tr><td colspan="6" class="empty-state">Use "Carregar Todos" ou "Buscar" para visualizar registros</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- FATURADOS -->
+        <div class="section" id="faturados-section">
+            <div class="card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn btn-primary" onclick="showForm('faturados', 'create')">+ Novo Faturado</button>
+                        <button class="btn btn-secondary" onclick="loadData('faturados')">Carregar Todos</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="search-faturados" placeholder="Buscar..." />
+                        <button class="btn btn-secondary" onclick="searchData('faturados')">Buscar</button>
+                    </div>
+                </div>
+                <div class="loading" id="loading-faturados" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Carregando...</p>
+                </div>
+                <div class="table-container">
+                    <table id="table-faturados">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('faturados', 0)">ID</th>
+                                <th onclick="sortTable('faturados', 1)">Razão Social</th>
+                                <th onclick="sortTable('faturados', 2)">Fantasia</th>
+                                <th onclick="sortTable('faturados', 3)">Documento</th>
+                                <th onclick="sortTable('faturados', 4)">Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-faturados">
+                            <tr><td colspan="6" class="empty-state">Use "Carregar Todos" ou "Buscar" para visualizar registros</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECEITAS -->
+        <div class="section" id="receitas-section">
+            <div class="card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn btn-primary" onclick="showForm('receitas', 'create')">+ Nova Receita</button>
+                        <button class="btn btn-secondary" onclick="loadData('receitas')">Carregar Todas</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="search-receitas" placeholder="Buscar..." />
+                        <button class="btn btn-secondary" onclick="searchData('receitas')">Buscar</button>
+                    </div>
+                </div>
+                <div class="loading" id="loading-receitas" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Carregando...</p>
+                </div>
+                <div class="table-container">
+                    <table id="table-receitas">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('receitas', 0)">ID</th>
+                                <th onclick="sortTable('receitas', 1)">Descrição</th>
+                                <th onclick="sortTable('receitas', 2)">Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-receitas">
+                            <tr><td colspan="4" class="empty-state">Use "Carregar Todas" ou "Buscar" para visualizar registros</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- DESPESAS -->
+        <div class="section" id="despesas-section">
+            <div class="card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn btn-primary" onclick="showForm('despesas', 'create')">+ Nova Despesa</button>
+                        <button class="btn btn-secondary" onclick="loadData('despesas')">Carregar Todas</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="search-despesas" placeholder="Buscar..." />
+                        <button class="btn btn-secondary" onclick="searchData('despesas')">Buscar</button>
+                    </div>
+                </div>
+                <div class="loading" id="loading-despesas" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Carregando...</p>
+                </div>
+                <div class="table-container">
+                    <table id="table-despesas">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('despesas', 0)">ID</th>
+                                <th onclick="sortTable('despesas', 1)">Descrição</th>
+                                <th onclick="sortTable('despesas', 2)">Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-despesas">
+                            <tr><td colspan="4" class="empty-state">Use "Carregar Todas" ou "Buscar" para visualizar registros</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM MODAL -->
+        <div class="modal" id="formModal">
+            <div class="modal-content" style="max-width: 600px;">
+                <h2 id="formTitle">Novo Registro</h2>
+                <form id="mainForm" onsubmit="saveRecord(event)">
+                    <div id="formFields"></div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let API_KEY = '';
+        let currentSection = 'contas';
+        let currentMode = 'create';
+        let currentId = null;
+        let allData = {};
+        const API_URL = 'http://localhost:5000';
+
+        // API Key
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (!key) {
+                alert('Por favor, insira uma API Key válida');
+                return;
+            }
+            API_KEY = key;
+            document.getElementById('apiKeyModal').classList.remove('active');
+            showMessage('API Key configurada com sucesso!', 'success');
+        }
+
+        // Navigation
+        function showSection(section) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`${section}-section`).classList.add('active');
+            currentSection = section;
+        }
+
+        // Messages
+        function showMessage(msg, type) {
+            const el = document.getElementById(`${type}Message`);
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        // Load Data
+        async function loadData(section) {
+            const loading = document.getElementById(`loading-${section}`);
+            const tbody = document.getElementById(`tbody-${section}`);
+            
+            loading.style.display = 'block';
+            tbody.innerHTML = '';
+
+            try {
+                const endpoint = getEndpoint(section);
+                const response = await fetch(`${API_URL}${endpoint}?status=ATIVO`);
+                const data = await response.json();
+                
+                if (data.erro) {
+                    showMessage(data.erro, 'error');
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Erro ao carregar dados</td></tr>';
+                    return;
+                }
+                
+                allData[section] = data;
+                renderTable(section, data);
+                showMessage(`${data.length} registros carregados`, 'success');
+            } catch (err) {
+                showMessage('Erro ao conectar com o servidor: ' + err.message, 'error');
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Erro ao carregar dados</td></tr>';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function getApiEndpoint(section) {
+    const endpoints = {
+        contas: '/api/movimentos',
+        fornecedores: '/api/pessoas',
+        clientes: '/api/pessoas',
+        faturados: '/api/pessoas',
+        receitas: '/api/classificacoes',
+        despesas: '/api/classificacoes'
+    };
+    return endpoints[section] || '/api/movimentos';
+}
+
+        function getEndpoint(section) {
+            const endpoints = {
+                contas: '/api/movimentos',
+                fornecedores: '/api/pessoas?tipo=FORNECEDOR',
+                clientes: '/api/pessoas?tipo=CLIENTE',
+                faturados: '/api/pessoas?tipo=FATURADO',
+                receitas: '/api/classificacoes?tipo=RECEITA',
+                despesas: '/api/classificacoes?tipo=DESPESA'
+            };
+            return endpoints[section] || '/api/movimentos';
+        }
+
+        // Search Data
+        async function searchData(section) {
+            const query = document.getElementById(`search-${section}`).value.toLowerCase();
+            if (!query) {
+                showMessage('Digite algo para buscar', 'error');
+                return;
+            }
+            
+            const loading = document.getElementById(`loading-${section}`);
+            loading.style.display = 'block';
+            
+            try {
+                const endpoint = getEndpoint(section);
+                const response = await fetch(`${API_URL}${endpoint}&search=${query}`);
+                const data = await response.json();
+                
+                if (data.erro) {
+                    showMessage(data.erro, 'error');
+                    return;
+                }
+                
+                allData[section] = data;
+                renderTable(section, data);
+                showMessage(`${data.length} registros encontrados`, 'success');
+            } catch (err) {
+                showMessage('Erro ao buscar: ' + err.message, 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Render Table
+        function renderTable(section, data) {
+            const tbody = document.getElementById(`tbody-${section}`);
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                if (section === 'contas') {
+                    return `<tr>
+                        <td>${item.idMovimentoContas}</td>
+                        <td>${item.tipo}</td>
+                        <td>${item.numeronotafiscal || 'N/A'}</td>
+                        <td>${formatDate(item.dataemissao)}</td>
+                        <td>${item.descricao}</td>
+                        <td>R$ ${formatCurrency(item.valortotal)}</td>
+                        <td><span class="badge badge-${item.status.toLowerCase()}">${item.status}</span></td>
+                        <td class="action-btns">
+                            <button class="btn btn-sm btn-secondary" onclick="editRecord('${section}', ${item.idMovimentoContas})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteRecord('${section}', ${item.idMovimentoContas})">Excluir</button>
+                        </td>
+                    </tr>`;
+                } else if (section === 'receitas' || section === 'despesas') {
+                    return `<tr>
+                        <td>${item.idClassificacao}</td>
+                        <td>${item.descricao}</td>
+                        <td><span class="badge badge-${item.status.toLowerCase()}">${item.status}</span></td>
+                        <td class="action-btns">
+                            <button class="btn btn-sm btn-secondary" onclick="editRecord('${section}', ${item.idClassificacao})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteRecord('${section}', ${item.idClassificacao})">Excluir</button>
+                        </td>
+                    </tr>`;
+                } else {
+                    return `<tr>
+                        <td>${item.idPessoas}</td>
+                        <td>${item.razaosocial}</td>
+                        <td>${item.fantasia || 'N/A'}</td>
+                        <td>${item.documento}</td>
+                        <td><span class="badge badge-${item.status.toLowerCase()}">${item.status}</span></td>
+                        <td class="action-btns">
+                            <button class="btn btn-sm btn-secondary" onclick="editRecord('${section}', ${item.idPessoas})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteRecord('${section}', ${item.idPessoas})">Excluir</button>
+                        </td>
+                    </tr>`;
+                }
+            }).join('');
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toLocaleDateString('pt-BR');
+        }
+
+        function formatCurrency(value) {
+            if (!value) return '0,00';
+            return parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        }
+
+        // Form
+        function showForm(section, mode, id = null) {
+            currentSection = section;
+            currentMode = mode;
+            currentId = id;
+            
+            document.getElementById('formTitle').textContent = 
+                mode === 'create' ? `Novo ${getSectionLabel(section)}` : `Editar ${getSectionLabel(section)}`;
+            
+            const fields = document.getElementById('formFields');
+            fields.innerHTML = getFormFields(section);
+            
+            if (mode === 'edit' && id) {
+                populateForm(section, id);
+            }
+            
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        function getFormFields(section) {
+            if (section === 'contas') {
+                return `
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select name="tipo" required>
+                            <option value="APAGAR">A Pagar</option>
+                            <option value="ARECEBER">A Receber</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Número NF</label>
+                        <input type="text" name="nf" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Data Emissão</label>
+                        <input type="date" name="data" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <input type="text" name="descricao" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Valor Total</label>
+                        <input type="number" step="0.01" name="valor" required />
+                    </div>
+                    <input type="hidden" name="status" value="ATIVO" />
+                `;
+            } else if (section === 'receitas' || section === 'despesas') {
+                return `
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <input type="text" name="descricao" required />
+                    </div>
+                    <input type="hidden" name="status" value="ATIVO" />
+                `;
+            } else {
+                return `
+                    <div class="form-group">
+                        <label>Razão Social</label>
+                        <input type="text" name="razaoSocial" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Fantasia</label>
+                        <input type="text" name="fantasia" />
+                    </div>
+                    <div class="form-group">
+                        <label>Documento (CPF/CNPJ)</label>
+                        <input type="text" name="documento" required />
+                    </div>
+                    <input type="hidden" name="status" value="ATIVO" />
+                `;
+            }
+        }
+
+        function populateForm(section, id) {
+    const data = allData[section] || [];
+    const item = data.find(d => {
+        if (section === 'contas') return d.idMovimentoContas === id;
+        if (section === 'receitas' || section === 'despesas') return d.idClassificacao === id;
+        return d.idPessoas === id;
+    });
+    
+    if (!item) return;
+    
+    const form = document.getElementById('mainForm');
+    
+    if (section === 'contas') {
+        form.querySelector('[name="tipo"]').value = item.tipo || 'APAGAR';
+        form.querySelector('[name="nf"]').value = item.numeronotafiscal || '';
+        form.querySelector('[name="data"]').value = item.dataemissao ? item.dataemissao.split('T')[0] : '';
+        form.querySelector('[name="descricao"]').value = item.descricao || '';
+        form.querySelector('[name="valor"]').value = item.valortotal || '';
+    } else if (section === 'receitas' || section === 'despesas') {
+        form.querySelector('[name="descricao"]').value = item.descricao || '';
+    } else {
+        form.querySelector('[name="razaoSocial"]').value = item.razaosocial || '';
+        form.querySelector('[name="fantasia"]').value = item.fantasia || '';
+        form.querySelector('[name="documento"]').value = item.documento || '';
+    }
+}
+
+        function closeForm() {
+            document.getElementById('formModal').classList.remove('active');
+            document.getElementById('mainForm').reset();
+        }
+
+        async function saveRecord(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            let data = Object.fromEntries(formData);
+            
+            // Mapear campos do formulário para API
+            if (currentSection === 'contas') {
+                data = {
+                    tipo: data.tipo,
+                    numeronotafiscal: data.nf,
+                    dataemissao: data.data,
+                    descricao: data.descricao,
+                    valortotal: parseFloat(data.valor),
+                    status: 'ATIVO'
+                };
+            } else if (currentSection === 'receitas') {
+                data = {
+                    tipo: 'RECEITA',
+                    descricao: data.descricao,
+                    status: 'ATIVO'
+                };
+            } else if (currentSection === 'despesas') {
+                data = {
+                    tipo: 'DESPESA',
+                    descricao: data.descricao,
+                    status: 'ATIVO'
+                };
+            } else {
+                // Fornecedores, Clientes, Faturados
+                let tipo = 'FORNECEDOR';
+                if (currentSection === 'clientes') tipo = 'CLIENTE';
+                if (currentSection === 'faturados') tipo = 'FATURADO';
+                
+                data = {
+                    tipo: tipo,
+                    razaosocial: data.razaoSocial,
+                    fantasia: data.fantasia || '',
+                    documento: data.documento,
+                    status: 'ATIVO'
+                };
+            }
+
+        }
+
+        function editRecord(section, id) {
+            showForm(section, 'edit', id);
+        }
+
+        async function deleteRecord(section, id) {
+            if (!confirm('Deseja realmente excluir este registro?')) return;
+            
+            try {
+                const endpoint = getApiEndpoint(section);
+                const response = await fetch(`${API_URL}${endpoint}/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.erro) {
+                    showMessage(result.erro, 'error');
+                } else {
+                    showMessage(result.mensagem, 'success');
+                    loadData(section);
+                }
+            } catch (err) {
+                showMessage('Erro ao excluir: ' + err.message, 'error');
+            }
+        }
+
+        function getSectionLabel(section) {
+            const labels = {
+                contas: 'Conta',
+                fornecedores: 'Fornecedor',
+                clientes: 'Cliente',
+                faturados: 'Faturado',
+                receitas: 'Receita',
+                despesas: 'Despesa'
+            };
+            return labels[section] || section;
+        }
+
+        // Sort Table
+        function sortTable(section, col) {
+            const data = allData[section] || [];
+            const sorted = [...data].sort((a, b) => {
+                const aVal = Object.values(a)[col];
+                const bVal = Object.values(b)[col];
+                return aVal > bVal ? 1 : -1;
+            });
+            renderTable(section, sorted);
+        }
+
+        // Generate Test Data
+        async function generateTestData() {
+            if (!confirm('Isso irá gerar 600 registros de teste. Continuar?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/gerar-dados-teste`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.erro) {
+                    showMessage(result.erro, 'error');
+                } else {
+                    showMessage(result.mensagem, 'success');
+                }
+            } catch (err) {
+                showMessage('Erro ao gerar dados de teste: ' + err.message, 'error');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Modal de API Key será mostrado automaticamente ao carregar
+            // Usuário deve inserir sua chave
+            
+            // Adicionar botão de gerar dados de teste na primeira seção
+            setTimeout(() => {
+                const toolbar = document.querySelector('.toolbar-left');
+                const btnTest = document.createElement('button');
+                btnTest.className = 'btn btn-secondary';
+                btnTest.textContent = 'Gerar Dados Teste';
+                btnTest.onclick = generateTestData;
+                toolbar.appendChild(btnTest);
+            }, 100);
+        });
+    </script>
+</body>
+</html>

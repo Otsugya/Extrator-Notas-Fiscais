@@ -541,6 +541,10 @@ def buscar_dados_entidades(entidades_relevantes):
 def index():
     return render_template('index.html')
 
+@app.route('/crud')
+def crud():
+    return render_template('crud.html')
+
 @app.route('/upload', methods=['POST'])
 def upload_pdf():
     try:
@@ -704,6 +708,348 @@ def reconstruir_embeddings():
         })
     except Exception as e:
         return jsonify({"erro": f"Erro ao reconstruir embeddings: {str(e)}"}), 500
+@app.route('/api/pessoas', methods=['GET'])
+def get_pessoas():
+    try:
+        conn = sqlite3.connect('sistema.db')
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        tipo = request.args.get('tipo')
+        status = request.args.get('status', 'ATIVO')
+        search = request.args.get('search', '')
+        
+        query = 'SELECT * FROM Pessoas WHERE status = ?'
+        params = [status]
+        
+        if tipo:
+            query += ' AND tipo = ?'
+            params.append(tipo)
+        
+        if search:
+            query += ' AND (razaosocial LIKE ? OR documento LIKE ?)'
+            params.extend([f'%{search}%', f'%{search}%'])
+        
+        c.execute(query, params)
+        pessoas = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return jsonify(pessoas)
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/pessoas/<int:id>', methods=['GET'])
+def get_pessoa(id):
+    try:
+        conn = sqlite3.connect('sistema.db')
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('SELECT * FROM Pessoas WHERE idPessoas = ?', (id,))
+        pessoa = c.fetchone()
+        conn.close()
+        
+        if pessoa:
+            return jsonify(dict(pessoa))
+        return jsonify({"erro": "Pessoa não encontrada"}), 404
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/pessoas', methods=['POST'])
+def create_pessoa():
+    try:
+        dados = request.json
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        
+        c.execute('''INSERT INTO Pessoas (tipo, razaosocial, fantasia, documento, status)
+                     VALUES (?, ?, ?, ?, ?)''',
+                  (dados['tipo'], dados['razaosocial'], dados.get('fantasia', ''),
+                   dados['documento'], 'ATIVO'))
+        
+        novo_id = c.lastrowid
+        conn.commit()
+        conn.close()
+        
+        # Criar embedding
+        criar_embedding_pessoa(novo_id, dados['tipo'], dados['razaosocial'], dados['documento'])
+        
+        return jsonify({"sucesso": True, "id": novo_id, "mensagem": "Pessoa criada com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/pessoas/<int:id>', methods=['PUT'])
+def update_pessoa(id):
+    try:
+        dados = request.json
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        
+        c.execute('''UPDATE Pessoas 
+                     SET razaosocial = ?, fantasia = ?, documento = ?
+                     WHERE idPessoas = ?''',
+                  (dados['razaosocial'], dados.get('fantasia', ''),
+                   dados['documento'], id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "mensagem": "Pessoa atualizada com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/pessoas/<int:id>', methods=['DELETE'])
+def delete_pessoa(id):
+    try:
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        c.execute('UPDATE Pessoas SET status = ? WHERE idPessoas = ?', ('INATIVO', id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "mensagem": "Pessoa excluída com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# CRUD CLASSIFICAÇÃO
+@app.route('/api/classificacoes', methods=['GET'])
+def get_classificacoes():
+    try:
+        conn = sqlite3.connect('sistema.db')
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        tipo = request.args.get('tipo')
+        status = request.args.get('status', 'ATIVO')
+        search = request.args.get('search', '')
+        
+        query = 'SELECT * FROM Classificacao WHERE status = ?'
+        params = [status]
+        
+        if tipo:
+            query += ' AND tipo = ?'
+            params.append(tipo)
+        
+        if search:
+            query += ' AND descricao LIKE ?'
+            params.append(f'%{search}%')
+        
+        c.execute(query, params)
+        classificacoes = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return jsonify(classificacoes)
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/classificacoes', methods=['POST'])
+def create_classificacao():
+    try:
+        dados = request.json
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        
+        c.execute('''INSERT INTO Classificacao (tipo, descricao, status)
+                     VALUES (?, ?, ?)''',
+                  (dados['tipo'], dados['descricao'], 'ATIVO'))
+        
+        novo_id = c.lastrowid
+        conn.commit()
+        conn.close()
+        
+        # Criar embedding
+        criar_embedding_classificacao(novo_id, dados['descricao'])
+        
+        return jsonify({"sucesso": True, "id": novo_id, "mensagem": "Classificação criada com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/classificacoes/<int:id>', methods=['PUT'])
+def update_classificacao(id):
+    try:
+        dados = request.json
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        
+        c.execute('UPDATE Classificacao SET descricao = ? WHERE idClassificacao = ?',
+                  (dados['descricao'], id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "mensagem": "Classificação atualizada com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/classificacoes/<int:id>', methods=['DELETE'])
+def delete_classificacao(id):
+    try:
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        c.execute('UPDATE Classificacao SET status = ? WHERE idClassificacao = ?', ('INATIVO', id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "mensagem": "Classificação excluída com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# CRUD MOVIMENTOS
+@app.route('/api/movimentos', methods=['GET'])
+def get_movimentos():
+    try:
+        conn = sqlite3.connect('sistema.db')
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        status = request.args.get('status', 'ATIVO')
+        search = request.args.get('search', '')
+        
+        query = '''SELECT m.*, 
+                   f.razaosocial as fornecedor_nome,
+                   ft.razaosocial as faturado_nome
+                   FROM MovimentoContas m
+                   LEFT JOIN Pessoas f ON m.Pessoas_idFornecedorCliente = f.idPessoas
+                   LEFT JOIN Pessoas ft ON m.Pessoas_idFaturado = ft.idPessoas
+                   WHERE m.status = ?'''
+        params = [status]
+        
+        if search:
+            query += ' AND (m.numeronotafiscal LIKE ? OR m.descricao LIKE ?)'
+            params.extend([f'%{search}%', f'%{search}%'])
+        
+        c.execute(query, params)
+        movimentos = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return jsonify(movimentos)
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/movimentos', methods=['POST'])
+def create_movimento():
+    try:
+        dados = request.json
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        
+        c.execute('''INSERT INTO MovimentoContas 
+                     (tipo, numeronotafiscal, dataemissao, descricao, valortotal, 
+                      Pessoas_idFornecedorCliente, Pessoas_idFaturado, status)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                  (dados['tipo'], dados['numeronotafiscal'], dados['dataemissao'],
+                   dados['descricao'], dados['valortotal'], 
+                   dados.get('Pessoas_idFornecedorCliente'), 
+                   dados.get('Pessoas_idFaturado'), 'ATIVO'))
+        
+        novo_id = c.lastrowid
+        conn.commit()
+        conn.close()
+        
+        # Criar embedding
+        criar_embedding_movimento(novo_id, dados['numeronotafiscal'], 
+                                dados['dataemissao'], dados['descricao'], 
+                                dados['valortotal'])
+        
+        return jsonify({"sucesso": True, "id": novo_id, "mensagem": "Movimento criado com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/movimentos/<int:id>', methods=['PUT'])
+def update_movimento(id):
+    try:
+        dados = request.json
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        
+        c.execute('''UPDATE MovimentoContas 
+                     SET numeronotafiscal = ?, dataemissao = ?, descricao = ?, 
+                         valortotal = ?
+                     WHERE idMovimentoContas = ?''',
+                  (dados['numeronotafiscal'], dados['dataemissao'],
+                   dados['descricao'], dados['valortotal'], id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "mensagem": "Movimento atualizado com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+@app.route('/api/movimentos/<int:id>', methods=['DELETE'])
+def delete_movimento(id):
+    try:
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        c.execute('UPDATE MovimentoContas SET status = ? WHERE idMovimentoContas = ?', 
+                  ('INATIVO', id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "mensagem": "Movimento excluído com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# SCRIPT DE GERAÇÃO DE DADOS DE TESTE
+@app.route('/api/gerar-dados-teste', methods=['POST'])
+def gerar_dados_teste():
+    try:
+        conn = sqlite3.connect('sistema.db')
+        c = conn.cursor()
+        
+        # Gerar 200 pessoas
+        tipos_pessoa = ['FORNECEDOR', 'CLIENTE', 'FATURADO']
+        nomes = ['João Silva', 'Maria Santos', 'Pedro Oliveira', 'Ana Costa', 'Carlos Souza']
+        empresas = ['Agro Tech Ltda', 'Rural Solutions', 'Campo Verde SA', 'Sementes Brasil']
+        
+        for i in range(200):
+            tipo = tipos_pessoa[i % 3]
+            is_empresa = i % 2 == 0
+            razao = empresas[i % len(empresas)] if is_empresa else nomes[i % len(nomes)]
+            doc = f"{10000000000000 + i}" if is_empresa else f"{10000000000 + i}"
+            
+            c.execute('''INSERT INTO Pessoas (tipo, razaosocial, fantasia, documento, status)
+                         VALUES (?, ?, ?, ?, ?)''',
+                      (tipo, f"{razao} {i+1}", f"Fantasia {i+1}", doc, 'ATIVO'))
+        
+        # Gerar 200 classificações
+        categorias = ['INSUMOS AGRÍCOLAS', 'MANUTENÇÃO', 'RECURSOS HUMANOS', 
+                      'SERVIÇOS', 'INFRAESTRUTURA', 'VENDAS', 'EXPORTAÇÃO']
+        
+        for i in range(100):
+            c.execute('''INSERT INTO Classificacao (tipo, descricao, status)
+                         VALUES (?, ?, ?)''',
+                      ('DESPESA', f"{categorias[i % len(categorias)]} - Item {i+1}", 'ATIVO'))
+        
+        for i in range(100):
+            c.execute('''INSERT INTO Classificacao (tipo, descricao, status)
+                         VALUES (?, ?, ?)''',
+                      ('RECEITA', f"{categorias[i % len(categorias)]} - Item {i+100}", 'ATIVO'))
+        
+        # Gerar 200 movimentos
+        import random
+        from datetime import datetime, timedelta
+        
+        for i in range(200):
+            data = datetime.now() - timedelta(days=random.randint(1, 365))
+            tipo = 'APAGAR' if i % 2 == 0 else 'ARECEBER'
+            valor = round(random.uniform(100, 50000), 2)
+            
+            c.execute('''INSERT INTO MovimentoContas 
+                         (tipo, numeronotafiscal, dataemissao, descricao, valortotal, 
+                          Pessoas_idFornecedorCliente, Pessoas_idFaturado, status)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                      (tipo, f"NF{10000+i}", data.strftime('%Y-%m-%d'),
+                       f"Descrição movimento {i+1}", valor, 
+                       random.randint(1, 200), random.randint(1, 200), 'ATIVO'))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "mensagem": "600 registros de teste criados com sucesso"})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+    
+        return render_template('crud.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
