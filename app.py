@@ -13,7 +13,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Configurar Gemini AI
-GEMINI_API_KEY = "AIzaSyAvag5ZD7lFydA4NVcM6a6AsMjUaSfmk7A"
+GEMINI_API_KEY = "AIzaSyAcD7kvvz6pK3VrGMfsh6tuM40TFboXpEM"
 genai.configure(api_key=GEMINI_API_KEY)
 
 CATEGORIAS_DESPESAS = {
